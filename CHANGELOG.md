@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.1.4 — 2026-04-21
+
+### Added
+
+- `IntentStatus.STALE_MARK_RETRYING` — new intermediate state for
+  the ADR-0003 A+B retry path. Claimer transitions
+  `PENDING_EXECUTION → STALE_MARK_RETRYING` when the sizer observes
+  a cold `MarkCache` entry; re-attempts after `next_retry_at`.
+  Terminal on retry exhaustion → `SKIPPED` with reason
+  `STALE_MARK_RETRY_EXHAUSTED`.
+- `StaleMarkRetryState` sub-model — grouped retry-lifecycle payload
+  (`retry_count`, `first_claim_at`, `last_claim_at`, `next_retry_at`).
+  Either all None (no STALE_MARK ever observed) or all populated.
+  Matches the existing nested-sub-model precedent
+  (`EnrichmentData`, `SanityCheckResult`, `GateResult`) per user's
+  Phase-B ratification nudge.
+- `IntentBlock.stale_mark_retry_state: Optional[StaleMarkRetryState]` —
+  top-level field carrying the nested payload.
+
+### Non-breaking
+
+All additions are additive. Existing consumers that deserialize
+historical docs (where these fields are absent) get `None` and
+continue working.
+
+### Rationale
+
+See `VantaBlack-EXE/docs/adr/0003-mark-cache-intent-feed.md` §0 +
+§4b for the decision record and payload vocabulary.
+
 ## v0.1.3 — 2026-04-21
 
 ### Added

@@ -31,6 +31,13 @@ class IntentStatus(str, Enum):
     EXPIRED = "EXPIRED"
     SKIPPED = "SKIPPED"
     FAILED = "FAILED"
+    # Added by ADR-0003 A+B hybrid (Schemas v0.1.4, 2026-04-21). The
+    # claimer transitions PENDING_EXECUTION → STALE_MARK_RETRYING when
+    # the sizer observes a cold MarkCache entry, and re-tries after the
+    # backoff deadline stored in `intent.stale_mark_retry_state`.
+    # Terminal on retry-budget exhaustion OR INTENT_MAX_RETRY_AGE
+    # ceiling → SKIPPED with reason STALE_MARK_RETRY_EXHAUSTED.
+    STALE_MARK_RETRYING = "STALE_MARK_RETRYING"
 
     # V2 legacy (read-only, DO NOT WRITE)
     REJECTED = "REJECTED"

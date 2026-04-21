@@ -23,8 +23,9 @@ from .enums import (
 )
 from .intent_block import GateResult, IntentBlock, SanityCheckResult
 from .leg import IntentLegSpec
+from .retry_state import StaleMarkRetryState
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 __all__ = [
     # top-level
@@ -33,6 +34,7 @@ __all__ = [
     "EnrichmentData",
     "GateResult",
     "SanityCheckResult",
+    "StaleMarkRetryState",
     # enums
     "IntentStatus",
     "IntentState",

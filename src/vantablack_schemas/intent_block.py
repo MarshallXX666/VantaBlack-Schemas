@@ -47,6 +47,7 @@ from .enums import (
     TimeInForce,
 )
 from .leg import IntentLegSpec
+from .retry_state import StaleMarkRetryState
 
 
 class GateResult(BaseModel):
@@ -118,6 +119,16 @@ class IntentBlock(BaseModel):
     claimed_by: Optional[str] = None
     terminal_at: Optional[datetime] = None
     terminal_reason: Optional[str] = None
+
+    # ------------------------------------------------------------------
+    # STALE_MARK retry lifecycle (ADR-0003 A+B, Schemas v0.1.4)
+    #
+    # Populated on PENDING_EXECUTION → STALE_MARK_RETRYING transition,
+    # updated on every subsequent retry attempt, preserved on
+    # STALE_MARK_RETRY_EXHAUSTED terminal SKIPPED for forensics.
+    # Invariant: None iff intent has NEVER observed STALE_MARK.
+    # ------------------------------------------------------------------
+    stale_mark_retry_state: Optional[StaleMarkRetryState] = None
 
     # ------------------------------------------------------------------
     # Status + state

@@ -78,12 +78,24 @@ class IntentDirection(str, Enum):
 # Structure + time-in-force
 # ---------------------------------------------------------------------------
 class StructureType(str, Enum):
-    # V1 AUTO (EXE Patch 7)
+    """Position structure.
+
+    V3 canonical members are direction-specific (NAKED_LONG_CALL vs
+    NAKED_LONG_PUT). The legacy V2 member NAKED_LONG is retained ONLY
+    for pre-V3 Firestore docs where direction was inferred separately.
+
+    TODO(aliases-remove-after-2026-05-10): drop V2 legacy NAKED_LONG in
+    v0.2.0 after rewrite-job backfills old docs.
+    """
+
+    # V3 canonical (EXE Patch 7)
     NAKED_LONG_CALL = "NAKED_LONG_CALL"
     NAKED_LONG_PUT = "NAKED_LONG_PUT"
     # MANUAL_TELEGRAM
     VERTICAL_DEBIT_CALL = "VERTICAL_DEBIT_CALL"
     VERTICAL_DEBIT_PUT = "VERTICAL_DEBIT_PUT"
+    # V2 legacy (read-only)
+    NAKED_LONG = "NAKED_LONG"
 
 
 class TimeInForce(str, Enum):
@@ -95,10 +107,23 @@ class TimeInForce(str, Enum):
 # Market snapshot taxonomy
 # ---------------------------------------------------------------------------
 class IVRegime(str, Enum):
+    """IV-regime classifier output.
+
+    V3 canonical values are COLD/COOL/WARM/HOT. The legacy V2 value
+    NORMAL is retained ONLY for backward compat with pre-V3 Firestore
+    docs — new writers MUST NOT emit it.
+
+    TODO(aliases-remove-after-2026-05-10): drop V2 legacy NORMAL in
+    v0.2.0 after rewrite-job backfills old docs.
+    """
+
+    # V3 canonical
     COLD = "COLD"
     COOL = "COOL"
     WARM = "WARM"
     HOT = "HOT"
+    # V2 legacy (read-only)
+    NORMAL = "NORMAL"
 
 
 class NarrativeType(str, Enum):

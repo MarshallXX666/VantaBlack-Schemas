@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.1.3 — 2026-04-21
+
+### Added
+
+- `IVRegime.NORMAL` — V2 legacy enum member retained for backward
+  compat with pre-V3 Firestore docs. Surfaced during Core migration
+  (4C Step 2): Core's V2 integration tests write `iv_regime="NORMAL"`
+  which V3's 4-member enum rejected. Removing in v0.2.0 after
+  rewrite-job.
+- `StructureType.NAKED_LONG` — V2 legacy (direction-inferred).
+  Canonical V3 members are `NAKED_LONG_CALL` / `NAKED_LONG_PUT`.
+  Removing in v0.2.0.
+
+### Why additive-only
+
+Both values surfaced from actual pre-V3 Core-written data. Rejecting
+them at canonical validation would force a one-shot Firestore
+migration before v0.1 could ship — that churn is what D4=4B's
+time-boxed aliases explicitly avoid. Additive legacy members behave
+identically to the IntentStatus V2-legacy pattern from v0.1.0.
+
 ## v0.1.2 — 2026-04-21
 
 ### Added

@@ -24,7 +24,7 @@ from .enums import (
 from .intent_block import GateResult, IntentBlock, SanityCheckResult
 from .leg import IntentLegSpec
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 __all__ = [
     # top-level

@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.1.2 — 2026-04-21
+
+### Added
+
+- `vantablack_schemas.fixtures` sub-package — three golden payload
+  classes for cross-repo contract testing:
+  - `LEGACY_CORE_PAYLOAD` + `legacy_core_payload(**overrides)` —
+    pre-2A-rename field names (`id` / `timestamp` / `ticker`),
+    exercises the `AliasChoices` migration path consumers see during
+    Phase D's alias-live window.
+  - `CANONICAL_CORE_PAYLOAD` + `canonical_core_payload(**overrides)` —
+    post-rename steady-state shape.
+  - `EDGE_CASE_PAYLOADS` — 13 `(name, payload, expect_kind)` tuples
+    covering: outer `extra="forbid"`, `EnrichmentData.extra="allow"`,
+    required/Optional field cardinality, legacy `IntentStatus` V2
+    members, IntentLegSpec `instrument`→`option_type` alias,
+    `signal_data` opacity.
+
+Fixtures live inside the installed package (under
+`src/vantablack_schemas/fixtures/`) so consumer repos (EXE, PM,
+Core) can `from vantablack_schemas.fixtures import ...` without a
+separate test-asset distribution.
+
 ## v0.1.1 — 2026-04-21
 
 ### Added

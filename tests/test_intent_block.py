@@ -275,6 +275,29 @@ def test_leg_currency_enum():
 # End-to-end 3-repo contract scenario
 # ---------------------------------------------------------------------------
 
+def test_enrichment_legacy_refresh_fallback_chain():
+    """v0.1.1: refresh_count present alongside refresh_generation — PM's
+    fallback-chain read pattern works on typed attributes."""
+    ed = EnrichmentData.model_validate({
+        "refresh_generation": None,
+        "refresh_count": 3,
+    })
+    # PM's read pattern: `ed.refresh_generation or ed.refresh_count`
+    assert (ed.refresh_generation or ed.refresh_count) == 3
+
+
+def test_enrichment_legacy_sanity_check_nested_dict():
+    """v0.1.1: sanity_check as typed Optional[dict] preserves PM's
+    (sanity_check or {}).get('ratio') idiom without dict-compat."""
+    ed = EnrichmentData.model_validate({
+        "sanity_check": {"ratio": 1.25, "action": "NORMAL"},
+    })
+    assert (ed.sanity_check or {}).get("ratio") == 1.25
+    # Missing case → typed attribute is None
+    ed_empty = EnrichmentData.model_validate({})
+    assert (ed_empty.sanity_check or {}).get("ratio") is None
+
+
 def test_three_way_contract_scenario():
     """Simulates Core write → Firestore → EXE read + PM read.
 

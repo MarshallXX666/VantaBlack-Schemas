@@ -1,6 +1,6 @@
 [project]
 name = "vantablack-schemas"
-version = "0.1.0"
+version = "0.1.1"
 description = "Shared Pydantic schemas for VantaBlack Core / EXE / PM (IntentBlock + related models)"
 readme = "README.md"
 requires-python = ">=3.12"

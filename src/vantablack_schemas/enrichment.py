@@ -60,11 +60,13 @@ class EnrichmentData(BaseModel):
 
     # V3 decision / sanity
     sanity_ratio: Optional[float] = None
+    sanity_check: Optional[dict[str, Any]] = None  # legacy nested-dict (ratio + action); PM reads via (sanity_check or {}).get("ratio")
     tier: Optional[str] = None
     signal_tier: Optional[str] = None
     target_dte: Optional[int] = None
     structure_upgraded: Optional[bool] = None
     refresh_generation: Optional[int] = None
+    refresh_count: Optional[int] = None  # legacy alias for refresh_generation; PM reads with fallback chain
 
     # Legs (PM-side forensic — separate from IntentBlock.legs)
     long_leg: Optional[dict[str, Any]] = None

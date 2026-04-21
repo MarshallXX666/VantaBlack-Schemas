@@ -1,6 +1,30 @@
 # Changelog
 
-## v0.1.0 — 2026-04-21 (planned initial release)
+## v0.1.1 — 2026-04-21
+
+### Added
+
+- `EnrichmentData.sanity_check: Optional[dict[str, Any]]` — legacy
+  nested-dict shape `{ratio, action}` that PM reads via the
+  `(sanity_check or {}).get("ratio")` idiom during Phase C migration.
+  Core's canonical `sanity_check` is a top-level
+  `SanityCheckResult`; this EnrichmentData field exists to preserve
+  PM's current read path without forcing a simultaneous PM
+  refactor to read from top-level. Remove in v0.2.0 after PM
+  migrates reads.
+- `EnrichmentData.refresh_count: Optional[int]` — legacy alias of
+  `refresh_generation`. PM reads both in a fallback chain. Remove
+  in v0.2.0.
+
+### Rationale
+
+The two additions are **typed** fields, not dict-compat methods.
+Per Phase-B D2=2C discipline, EnrichmentData's only escape hatch
+remains `extra="allow"`. These legacy fields become explicit-and-
+typed instead of flowing through `extra="allow"`, giving PM
+migration a clean target.
+
+## v0.1.0 — 2026-04-21 (initial release)
 
 ### Summary
 

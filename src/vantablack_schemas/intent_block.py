@@ -256,7 +256,17 @@ class IntentBlock(BaseModel):
     # ------------------------------------------------------------------
     model_config = ConfigDict(
         frozen=False,  # Core mutates in-memory during enrichment; PM mutates at exit
-        extra="forbid",  # ← outer discipline: declared fields only
+        # v0.1.5 (2026-04-23): outer `extra` relaxed to "ignore" for the
+        # alias-live-dual-write window. Core's intent_store.save() emits both
+        # canonical keys (intent_id/created_at/underlying) AND legacy aliases
+        # (id/timestamp/ticker) for back-compat with Core-internal Firestore
+        # queries at src/services/intent_store.py:549,605,675-676,873-874.
+        # Schemas validating read-side docs must tolerate those legacy extras
+        # or the dual-write makes every saved doc unreadable by EXE + PM.
+        # Inner sub-models (GateResult/SanityCheckResult/IntentLegSpec) keep
+        # extra="forbid" — typos there still fail loudly. Flip back to
+        # "forbid" at the 2026-05-10 aliases-removal deadline.
+        extra="ignore",  # ← relaxed for dual-write tolerance, see comment
         populate_by_name=True,  # attribute access uses canonical names
         use_enum_values=False,
         arbitrary_types_allowed=False,

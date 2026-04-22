@@ -146,12 +146,16 @@ EDGE_CASE_PAYLOADS: list[tuple[str, dict, str]] = [
         "valid",  # extra="allow" on EnrichmentData → unknown key survives
     ),
     (
-        "outer_extra_forbid",
+        "outer_extra_ignore",
         {
             **canonical_core_payload(),
-            "totally_undeclared_top_level_field": "should_be_rejected",
+            "totally_undeclared_top_level_field": "silently_dropped",
         },
-        "raises",  # outer extra="forbid" → Pydantic rejects
+        # v0.1.5: outer extra relaxed from "forbid" to "ignore" for alias-
+        # live-dual-write tolerance (see CHANGELOG.md v0.1.5). Extra keys on
+        # the outer model are silently dropped instead of raising. Flip
+        # back to "forbid" + "raises" at 2026-05-10 aliases-removal.
+        "valid",
     ),
     (
         "required_intent_id_missing",

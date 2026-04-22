@@ -146,12 +146,17 @@ def test_roundtrip_equality():
 # Contract discipline — outer extra="forbid" (D2 meta)
 # ---------------------------------------------------------------------------
 
-def test_outer_extra_forbid_rejects_unknown_field():
+def test_outer_extra_ignore_silently_drops_unknown_field():
+    """v0.1.5: outer `extra="ignore"` replaces v0.1.4's `"forbid"` for
+    the alias-live-dual-write window (see CHANGELOG.md v0.1.5).
+    Unknown outer fields are silently dropped instead of raising; inner
+    sub-models (GateResult/SanityCheckResult/IntentLegSpec) remain
+    extra="forbid"."""
     payload = _v3_style_payload()
-    payload["some_future_field_that_doesnt_exist"] = "surprise"
-    with pytest.raises(ValidationError) as excinfo:
-        IntentBlock.model_validate(payload)
-    assert "extra_forbidden" in str(excinfo.value) or "extra" in str(excinfo.value).lower()
+    payload["some_future_field_that_doesnt_exist"] = "silently_dropped"
+    intent = IntentBlock.model_validate(payload)
+    dumped = intent.model_dump(mode="json")
+    assert "some_future_field_that_doesnt_exist" not in dumped
 
 
 # ---------------------------------------------------------------------------

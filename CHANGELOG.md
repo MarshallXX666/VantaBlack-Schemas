@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.1.5 — 2026-04-23
+
+### Changed
+
+- `IntentBlock.model_config.extra`: `"forbid"` → `"ignore"` on the outer
+  model. Rationale: Core's `intent_store.save()` dual-writes both
+  canonical keys (`intent_id`/`created_at`/`underlying`) AND legacy
+  aliases (`id`/`timestamp`/`ticker`) to keep Core-internal Firestore
+  queries at `src/services/intent_store.py:549,605,675-676,873-874`
+  working during the 2026-05-10 alias-deprecation window. Validating
+  read-side docs with the legacy extras present under `extra="forbid"`
+  raised `extra_forbidden` errors, causing EXE + PM to reject every
+  canonical-writer-produced doc. v0.1.5 tolerates the extras; inner
+  sub-models (`GateResult`, `SanityCheckResult`, `IntentLegSpec`) keep
+  `extra="forbid"` — typos in those shapes still fail loudly.
+
+### Notes
+
+- **Retirement trigger**: 2026-05-10 aliases-removal. At that point,
+  Core's `intent_store.save()` drops the dual-write + Core-internal
+  queries migrate to canonical field names. The outer `IntentBlock`
+  flips back to `extra="forbid"`.
+- **Discovered**: Phase D execution 2026-04-23. The contract bug was
+  masked for 48h+ because all `_CanonicalIntentBlock.model_validate()`
+  calls in Core raised on a separate sub-shape drift (7 errors in
+  `l1_gate`/`l2_gate`/`sanity_check`) before the dual-write block
+  executed. Hotfix to Core's `_core_block_to_canonical_dict` unblocked
+  the validate step, revealing this latent second-layer bug.
+
 ## v0.1.4 — 2026-04-21
 
 ### Added

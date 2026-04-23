@@ -167,8 +167,15 @@ class IntentBlock(BaseModel):
     # Sizing (Y5 v2 OPEN)
     # ------------------------------------------------------------------
     schema_version: Optional[int] = 1
-    size_pct: Optional[float] = None  # ephemeral — sizer input, not persisted
-    slippage_bps: Optional[int] = None  # ephemeral
+    # Y5 Step 6 cross-service sizing contract (ADR Y5 §2.6). Core writes
+    # these on v2 OPEN intents; EXE Y5 sizer consumes them at claim time
+    # to derive quantity + limit. MUST persist through Firestore round-trip
+    # — pre-2026-04-23 comments marked these "ephemeral" which caused
+    # intent_store to drop them on write and broke every AUTO flip attempt
+    # (EXE saw size_pct=None → SIZE_INVALID_PCT). Optional because CLOSE
+    # intents and legacy v1 docs legitimately leave them None.
+    size_pct: Optional[float] = None
+    slippage_bps: Optional[int] = None
     max_premium_per_contract_s10k: Optional[int] = None
     max_slippage_bps: Optional[int] = None
     quantity: Optional[int] = None

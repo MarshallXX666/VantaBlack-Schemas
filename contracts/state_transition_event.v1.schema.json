@@ -1,0 +1,180 @@
+{
+  "$defs": {
+    "Direction": {
+      "enum": [
+        "LONG",
+        "SHORT"
+      ],
+      "title": "Direction",
+      "type": "string"
+    },
+    "QualityAttestation": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ],
+      "title": "QualityAttestation",
+      "type": "string"
+    },
+    "TrendState": {
+      "enum": [
+        "LONG",
+        "SHORT",
+        "NEUTRAL"
+      ],
+      "title": "TrendState",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Domain event emitted on every state transition.\n\nAuthoritative schema. Quality is metadata, never a filter on emission.\nConsumer filtering is consumer's responsibility.",
+  "properties": {
+    "atr": {
+      "title": "Atr",
+      "type": "number"
+    },
+    "bar_close_timestamp_utc": {
+      "format": "date-time",
+      "title": "Bar Close Timestamp Utc",
+      "type": "string"
+    },
+    "breakout_strength": {
+      "title": "Breakout Strength",
+      "type": "number"
+    },
+    "candle_body_ratio": {
+      "title": "Candle Body Ratio",
+      "type": "number"
+    },
+    "candle_wick_ratio": {
+      "title": "Candle Wick Ratio",
+      "type": "number"
+    },
+    "confidence": {
+      "title": "Confidence",
+      "type": "number"
+    },
+    "direction": {
+      "$ref": "#/$defs/Direction"
+    },
+    "efficiency_ratio": {
+      "title": "Efficiency Ratio",
+      "type": "number"
+    },
+    "event_schema_version": {
+      "default": "v1",
+      "title": "Event Schema Version",
+      "type": "string"
+    },
+    "event_type": {
+      "default": "state_transition",
+      "title": "Event Type",
+      "type": "string"
+    },
+    "from_state": {
+      "$ref": "#/$defs/TrendState"
+    },
+    "hl2_src": {
+      "title": "Hl2 Src",
+      "type": "number"
+    },
+    "htf_1d_trend": {
+      "$ref": "#/$defs/TrendState"
+    },
+    "htf_4h_trend": {
+      "$ref": "#/$defs/TrendState"
+    },
+    "htf_aligned_count": {
+      "title": "Htf Aligned Count",
+      "type": "integer"
+    },
+    "is_confirmed_bar": {
+      "title": "Is Confirmed Bar",
+      "type": "boolean"
+    },
+    "price": {
+      "title": "Price",
+      "type": "number"
+    },
+    "provider_metadata": {
+      "additionalProperties": true,
+      "title": "Provider Metadata",
+      "type": "object"
+    },
+    "provider_name": {
+      "title": "Provider Name",
+      "type": "string"
+    },
+    "quality_attestation": {
+      "$ref": "#/$defs/QualityAttestation"
+    },
+    "quality_attestation_reasons": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Quality Attestation Reasons",
+      "type": "array"
+    },
+    "stop_level": {
+      "title": "Stop Level",
+      "type": "number"
+    },
+    "target_2atr": {
+      "title": "Target 2Atr",
+      "type": "number"
+    },
+    "ticker": {
+      "title": "Ticker",
+      "type": "string"
+    },
+    "timeframe": {
+      "title": "Timeframe",
+      "type": "string"
+    },
+    "timestamp_utc": {
+      "format": "date-time",
+      "title": "Timestamp Utc",
+      "type": "string"
+    },
+    "to_state": {
+      "$ref": "#/$defs/Direction"
+    },
+    "trend_bars": {
+      "title": "Trend Bars",
+      "type": "integer"
+    },
+    "trend_bars_aligned": {
+      "title": "Trend Bars Aligned",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "ticker",
+    "timestamp_utc",
+    "bar_close_timestamp_utc",
+    "timeframe",
+    "provider_name",
+    "from_state",
+    "to_state",
+    "direction",
+    "quality_attestation",
+    "price",
+    "atr",
+    "stop_level",
+    "target_2atr",
+    "confidence",
+    "breakout_strength",
+    "efficiency_ratio",
+    "trend_bars",
+    "trend_bars_aligned",
+    "hl2_src",
+    "htf_4h_trend",
+    "htf_1d_trend",
+    "htf_aligned_count",
+    "candle_body_ratio",
+    "candle_wick_ratio",
+    "is_confirmed_bar"
+  ],
+  "title": "StateTransitionEvent",
+  "type": "object"
+}

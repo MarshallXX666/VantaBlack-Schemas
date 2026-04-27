@@ -218,7 +218,24 @@ class IntentBlock(BaseModel):
     narrative_type: Optional[NarrativeType] = None
     narrative_source: Optional[str] = None
     narrative_confidence: Optional[float] = None
-    signal_source: Optional[str] = None
+    signal_source: str = Field(
+        default="tv_legacy",
+        description=(
+            "Provider that originated this trade. Values: "
+            "'SuperTrend_v2' (Signal Engine path), "
+            "'tv_legacy' (TV path or backfilled records), "
+            "'L1_FLIP' / 'IV_CONTINUATION' (legacy values, retained), "
+            "future: 'CVOL_PVOL_v1', 'MR_v1'."
+        ),
+    )
+    entry_provider_context: Optional[dict[str, Any]] = Field(
+        default=None,
+        description=(
+            "Provider-specific entry-time snapshot. Schema-less by design — "
+            "each provider populates its own keys. Used for forensic; "
+            "not consumed by trading logic."
+        ),
+    )
 
     # ------------------------------------------------------------------
     # Structure upgrade forensics

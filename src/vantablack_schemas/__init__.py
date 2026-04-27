@@ -25,7 +25,7 @@ from .intent_block import GateResult, IntentBlock, SanityCheckResult
 from .leg import IntentLegSpec
 from .retry_state import StaleMarkRetryState
 
-__version__ = "0.1.4"
+__version__ = "0.1.6"
 
 __all__ = [
     # top-level

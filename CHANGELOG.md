@@ -1,5 +1,54 @@
 # Changelog
 
+## v0.1.6 — 2026-04-27
+
+### Added
+
+- `IntentBlock.signal_source`: type tightened from `Optional[str] = None`
+  to `str = Field(default="tv_legacy")`. Enables multi-provider future
+  per `engine_adaptation_design.md` §3.3 + `core_cc_proposal_final.md`
+  §3.S1.1. Vocabulary:
+  - `"SuperTrend_v2"` — Signal Engine path (Stage 2+)
+  - `"tv_legacy"` — TV path or backfilled records (default for missing)
+  - `"L1_FLIP"` / `"IV_CONTINUATION"` — legacy values retained for
+    forensic-query compatibility on pre-v0.1.6 docs
+  - Future: `"CVOL_PVOL_v1"`, `"MR_v1"`, etc.
+- `IntentBlock.entry_provider_context`: new `Optional[dict[str, Any]] =
+  None` field. Provider-specific entry-time forensic snapshot;
+  schema-less by design — each provider populates its own keys.
+  Not consumed by trading logic.
+- `contracts/state_transition_event.v1.schema.json`: cross-repo single
+  source of truth for the Signal Engine domain event format. Synced
+  from `VantaBlack-Engine/contracts/`.
+- `data/contract_specimens/state_transition_event_v1_specimens.jsonl`:
+  6 known-scenario specimens for cross-repo contract validation.
+- `tests/test_state_transition_event_contract.py`: validates each
+  specimen against the frozen v1 schema (jsonschema dev dep).
+- `scripts/sync_from_engine.py`: helper to re-sync schema + specimens
+  when Engine bumps the v1 spec.
+- `jsonschema>=4.0` dev dependency for the contract test.
+
+### Documented (future use, not yet emitted)
+
+- New Decision `reason_code` values that PM Stage 3 will emit:
+  - `LAYER_1_SIGNAL_REVERSAL` — gated PM Layer 1 flip exit
+    (`LAYER_1_SIGNAL_REVERSAL_EXIT_ENABLED` flag)
+  - `LAYER_3_VOL_CRUSH_FAST` — 1min-cadence IV crush detection
+    that pre-Stage-3 daily cadence would have missed
+
+### Migration notes
+
+- Backward-compat: pre-v0.1.6 Firestore docs without `signal_source` /
+  without `entry_provider_context` deserialize cleanly (default kicks
+  in for the former, None for the latter). Outer `extra="ignore"` is
+  retained from v0.1.5.
+- Stage 2 backfill script (`Core/scripts/backfill_intent_signal_source.py`)
+  will normalize historical IntentBlocks where `signal_source IS NULL`
+  → `"tv_legacy"`. After backfill completes, no Firestore docs will
+  carry `null` for this field.
+- No breaking changes vs v0.1.5 — version bump reflects additive
+  multi-provider preparation.
+
 ## v0.1.5 — 2026-04-23
 
 ### Changed

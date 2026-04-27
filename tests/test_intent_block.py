@@ -361,3 +361,78 @@ def test_three_way_contract_scenario():
 
     # Both views round-trip to the SAME canonical shape
     assert exe_view.model_dump(mode="json") == pm_view.model_dump(mode="json")
+
+
+# ---------------------------------------------------------------------------
+# v0.1.6: signal_source default + entry_provider_context (multi-provider prep)
+#
+# Per engine_adaptation_design.md §3.3 + core_cc_proposal_final.md §3.S1.1:
+# - signal_source flips from `Optional[str] = None` → `str = "tv_legacy"`
+#   default. Existing legacy values ("L1_FLIP", "IV_CONTINUATION") still
+#   accepted; new "SuperTrend_v2" added for Signal Engine path.
+# - entry_provider_context: opaque Optional[dict] for provider-specific
+#   entry-time forensic snapshot.
+# ---------------------------------------------------------------------------
+
+def test_intent_block_signal_source_default_tv_legacy():
+    """Missing signal_source → "tv_legacy" (was None pre-v0.1.6).
+
+    Stage 2 backfill script will overwrite historical None → "tv_legacy"
+    on existing Firestore docs. Going forward, missing field on parse
+    triggers the default."""
+    payload = _v3_style_payload()
+    assert "signal_source" not in payload  # ensure missing
+    intent = IntentBlock.model_validate(payload)
+    assert intent.signal_source == "tv_legacy"
+
+
+def test_intent_block_entry_provider_context_optional():
+    """entry_provider_context defaults to None when absent."""
+    payload = _v3_style_payload()
+    assert "entry_provider_context" not in payload
+    intent = IntentBlock.model_validate(payload)
+    assert intent.entry_provider_context is None
+
+
+def test_intent_block_entry_provider_context_accepts_opaque_dict():
+    """entry_provider_context is schema-less by design — any dict
+    payload is accepted (provider populates its own keys)."""
+    payload = _v3_style_payload(entry_provider_context={
+        "supertrend_state": "LONG",
+        "atr_at_entry": 2.41,
+        "htf_aligned_count_at_entry": 2,
+        "trend_bars_at_entry": 3,
+        "stop_calculation_method": "atr_band",
+        "config_hash": "abc123",
+    })
+    intent = IntentBlock.model_validate(payload)
+    assert intent.entry_provider_context is not None
+    assert intent.entry_provider_context["supertrend_state"] == "LONG"
+    assert intent.entry_provider_context["atr_at_entry"] == 2.41
+
+
+@pytest.mark.parametrize("legacy_value", ["L1_FLIP", "IV_CONTINUATION"])
+def test_intent_block_legacy_signal_source_values_still_accepted(legacy_value):
+    """Pre-v0.1.6 IntentBlocks set signal_source to "L1_FLIP" (flip-driven
+    GO) or "IV_CONTINUATION" (continuation re-entry). v0.1.6 retains these
+    values — Schemas does not enforce a closed enum on signal_source so
+    forensic queries on historical docs continue to work."""
+    payload = _v3_style_payload(signal_source=legacy_value)
+    intent = IntentBlock.model_validate(payload)
+    assert intent.signal_source == legacy_value
+
+
+def test_intent_block_signal_source_supertrend_v2_value_accepted():
+    """New value for Signal Engine path."""
+    payload = _v3_style_payload(signal_source="SuperTrend_v2")
+    intent = IntentBlock.model_validate(payload)
+    assert intent.signal_source == "SuperTrend_v2"
+
+
+def test_intent_block_legacy_payload_without_entry_provider_context_parses():
+    """Pre-v0.1.6 Firestore docs lacking entry_provider_context must still
+    deserialize — backward compat is the whole point of Optional + default."""
+    intent = IntentBlock.model_validate(_core_style_payload())
+    assert intent.entry_provider_context is None
+    # Default kicks in for the missing signal_source field too
+    assert intent.signal_source == "tv_legacy"

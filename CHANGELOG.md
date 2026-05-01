@@ -71,34 +71,47 @@
     requirement). Engine's classifier suppresses this composition;
     no specimen exercises the forbidden combination.
 
-### Wire compatibility (v1 consumers)
+### Wire compatibility — IMPORTANT correction (PR #2 review)
 
-`setup_composition` and `lifecycle_stage` are EMITTED ONLY when their
-content is non-default — Signal Engine's `WebhookDispatcher` excludes
-them from the JSON payload when (a) `setup_composition` is empty or (b)
-`lifecycle_stage == Unknown`. Strict v1 parsers (`extra="forbid"`) on
-events with no setup classification continue to see the original v1
-shape and accept them. The new `wire_default_omitted` specimen locks
-this behavior into the contract corpus.
+**v0.1.7 is NOT byte-compatible with strict pre-v0.1.7 parsers.** An
+earlier draft of this CHANGELOG claimed it was; that claim is wrong and
+has been removed. The reality:
 
-Consumers that want to react to the new fields should opt in by
-widening their parser. SetupTag MUST be parsed strictly
-(`extra="forbid"` equivalent in your stack) since its required-fields
-list is now load-bearing.
+- `event_id` is present on the schema (and on every wire payload) in
+  v0.1.7. It was NOT present in the v0.1.6 frozen schema — even though
+  Engine's pydantic model has carried `event_id` since the initial
+  commit, the Schemas-repo schema synced before this PR did not include
+  it. So from the perspective of any consumer pinned to the previous
+  Schemas release, `event_id` is a NEW required-on-wire field.
+- `setup_composition` and `lifecycle_stage` are conditionally omitted by
+  Engine's `WebhookDispatcher` when at default — so a strict consumer
+  could in principle accept events without those two fields — BUT
+  `event_id` has no equivalent omission, so every v0.1.7 event payload
+  carries it.
+- Net: a strict pre-v0.1.7 parser (`extra="forbid"`) will reject every
+  v0.1.7 event because of `event_id` alone, regardless of which other
+  fields are at default. **Consumer parser widening is required.**
 
-### Documented (was previously unspoken)
+The new `wire_default_omitted` specimen still demonstrates the
+`setup_composition` / `lifecycle_stage` omission behavior — it's
+useful for verifying that v0.1.7-aware consumers cope with the
+omit-on-default shape. It does NOT (and cannot) demonstrate
+"byte-compatible with v1.x" wire shape; see
+`tests/test_v0_1_7_legacy_compat.py` for the explicit contract that
+old strict parsers reject all v0.1.7 events.
 
-- **`event_id`** is a UUID4 emitted on every event for consumer-side
-  retry deduplication. Engine's `WebhookDispatcher` retries the same
-  payload (with the same `event_id`) up to 5 times with exponential
-  backoff on transient consumer 5xx; consumers MUST treat repeat
-  `event_id` as the same event and not double-process. Note: across
-  Engine restarts the same logical event will get a new UUID4, so
-  consumers should ALSO derive a deterministic dedup key from
-  `(ticker, bar_close_timestamp_utc, provider_name)` for restart-safe
-  idempotency.
-- All specimens carry `event_id`; the field has been on the schema
-  since v0.1.6 but was not previously called out here.
+### `event_id` contract (newly documented in this PR)
+
+- UUID4 generated on the producer side for every event.
+- Used for consumer-side retry deduplication. Engine's
+  `WebhookDispatcher` retries the same payload (with the same
+  `event_id`) up to 5 times with exponential backoff on transient
+  consumer 5xx. Consumers MUST treat repeat `event_id` as the same
+  event and not double-process.
+- Across Engine restarts the same logical event will get a new
+  UUID4, so consumers should ALSO derive a deterministic dedup key
+  from `(ticker, bar_close_timestamp_utc, provider_name)` for
+  restart-safe idempotency. Both layers are needed.
 
 ### Migration notes
 

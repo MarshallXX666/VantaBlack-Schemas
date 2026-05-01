@@ -1,5 +1,132 @@
 # Changelog
 
+## v0.1.7 — 2026-05-01
+
+### Added
+
+- `contracts/state_transition_event.v1.schema.json`: re-synced from
+  VantaBlack-Engine after the lifecycle-setup-types feature merge plus a
+  follow-up 7-fix code-review batch + this PR's review-driven hardening
+  (Engine commit, deployed as Cloud Run revision `signal-engine-00027-p26`).
+
+  Three new `$defs` (LifecycleStage, SetupType, SetupTag) plus two
+  lifecycle fields newly present on `StateTransitionEvent`, plus
+  `event_id` (UUID4) which has been on Engine's pydantic model since
+  initial commit but was not present in the previously-synced Schemas
+  contract — see the `event_id` contract section below for the
+  load-bearing wire-compat consequences:
+  - `setup_composition: list[SetupTag]` — lifecycle setup tags per
+    `strategy_synthesis_design.md` §3.1-3.2. Each tag carries `name`
+    (one of `breakout` / `pullback_resume` / `reversal_start` /
+    `persistent_momentum`), `direction`, and `live_status`. Tags with
+    `live_status=False` are SHADOW components per §2.4 — Decision
+    Boundary on the consumer side MUST filter them out before sizing.
+  - `lifecycle_stage: LifecycleStage` — trend lifecycle phase inferred
+    for the event. Defaults to `Unknown` per §2.4 rule #2: while the
+    `ongoing` classifier (persistent_momentum) is shadow, Signal Engine
+    cannot definitively assert non-`Unknown`. Consumers MUST fail-loud
+    on `Unknown` per §2.4 rule #4 — no silent coercion.
+
+- `data/contract_specimens/state_transition_event_v1_specimens.jsonl`:
+  expanded from 6 → 13 specimens to address the test gap on positive
+  coverage of v0.1.7 fields and the wire-omission shape.
+
+  v0.1.6 baseline (unchanged labels): `long_pass_shadow_a`,
+  `short_pass_shadow_a`, `long_fail_low_confidence`,
+  `short_fail_multi_reason`, `calibration_phase_new_provider`,
+  `post_cutover_live_b`.
+
+  v0.1.7 positive coverage (new): `breakout_birth_long`,
+  `pullback_resume_re_entry_short`, `reversal_start_reversal_long`,
+  `pullback_resume_with_breakout_compositional`,
+  `persistent_momentum_shadow_long`,
+  `persistent_momentum_post_promotion_ongoing` (forward-prep for the
+  post-shadow regime).
+
+  v0.1.7 wire-omission (new): `wire_default_omitted` — mirrors the
+  WebhookDispatcher's actual JSON output when both v0.1.7 fields are
+  at default (the dispatcher OMITS them entirely, not just emits the
+  default value). Without this specimen the corpus would only cover
+  the explicit-default shape, not the wire-omitted shape that strict
+  v1 consumers actually see.
+
+### Strengthened (review-driven)
+
+- **`SetupTag.live_status` is now REQUIRED** in the schema (no default).
+  Defaulting to `True` silently coerces shadow components into live ones
+  if a producer forgets to set it — exactly the §2.4 shadow-isolation
+  hole this requirement closes. Engine's existing producer code
+  (`SuperTrendProvider._classify_setup_composition`) already sets it
+  explicitly for all four setup types, so this is a contract-tightening,
+  not a behavior change.
+
+- **Cross-field invariants** documented + enforced via specimens (the
+  schema deliberately stays permissive; consumers + specimens carry the
+  invariants):
+  - `setup_composition[*].direction` MUST equal the event's `direction`
+    (consumer-enforced; specimen-locked via
+    `test_setup_tag_invariants_within_specimens`).
+  - `persistent_momentum` tags MUST have `live_status=False` while the
+    ongoing classifier is in shadow phase (§2.4 rule #2). The
+    `persistent_momentum_post_promotion_ongoing` specimen is the sole
+    documented exception — it represents the post-promotion regime.
+  - §3.2 mutex: `persistent_momentum` MUST NOT co-occur with
+    `reversal_start` (HTF mutex contradicts persistent's HTF-aligned
+    requirement). Engine's classifier suppresses this composition;
+    no specimen exercises the forbidden combination.
+
+### Wire compatibility — IMPORTANT correction (PR #2 review)
+
+**v0.1.7 is NOT byte-compatible with strict pre-v0.1.7 parsers.** An
+earlier draft of this CHANGELOG claimed it was; that claim is wrong and
+has been removed. The reality:
+
+- `event_id` is present on the schema (and on every wire payload) in
+  v0.1.7. It was NOT present in the v0.1.6 frozen schema — even though
+  Engine's pydantic model has carried `event_id` since the initial
+  commit, the Schemas-repo schema synced before this PR did not include
+  it. So from the perspective of any consumer pinned to the previous
+  Schemas release, `event_id` is a NEW required-on-wire field.
+- `setup_composition` and `lifecycle_stage` are conditionally omitted by
+  Engine's `WebhookDispatcher` when at default — so a strict consumer
+  could in principle accept events without those two fields — BUT
+  `event_id` has no equivalent omission, so every v0.1.7 event payload
+  carries it.
+- Net: a strict pre-v0.1.7 parser (`extra="forbid"`) will reject every
+  v0.1.7 event because of `event_id` alone, regardless of which other
+  fields are at default. **Consumer parser widening is required.**
+
+The new `wire_default_omitted` specimen still demonstrates the
+`setup_composition` / `lifecycle_stage` omission behavior — it's
+useful for verifying that v0.1.7-aware consumers cope with the
+omit-on-default shape. It does NOT (and cannot) demonstrate
+"byte-compatible with v1.x" wire shape; see
+`tests/test_v0_1_7_legacy_compat.py` for the explicit contract that
+old strict parsers reject all v0.1.7 events.
+
+### `event_id` contract (newly documented in this PR)
+
+- UUID4 generated on the producer side for every event.
+- Used for consumer-side retry deduplication. Engine's
+  `WebhookDispatcher` retries the same payload (with the same
+  `event_id`) up to 5 times with exponential backoff on transient
+  consumer 5xx. Consumers MUST treat repeat `event_id` as the same
+  event and not double-process.
+- Across Engine restarts the same logical event will get a new
+  UUID4, so consumers should ALSO derive a deterministic dedup key
+  from `(ticker, bar_close_timestamp_utc, provider_name)` for
+  restart-safe idempotency. Both layers are needed.
+
+### Migration notes
+
+- No schema version bump (still `v1`) — additive fields + a tightened
+  required list on the v0.1.7-introduced `SetupTag`. Pre-v0.1.7 events
+  cannot fail the new `live_status` requirement because they did not
+  carry `setup_composition` at all.
+- Consumer integration order: VantaBlack-Schemas v0.1.7 (this release) →
+  VantaBlack-Core Stage 2 wiring (post 24h soak PASS) → VantaBlack-PM
+  Stage 3 wiring (post cut-over).
+
 ## v0.1.6 — 2026-04-27
 
 ### Added

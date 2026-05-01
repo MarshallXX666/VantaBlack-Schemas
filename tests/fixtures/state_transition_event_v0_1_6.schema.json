@@ -8,58 +8,12 @@
       "title": "Direction",
       "type": "string"
     },
-    "LifecycleStage": {
-      "description": "Trend lifecycle phase inferred for this event (per \u00a72.3 + \u00a72.4).\n\nPer \u00a72.4 rule #2 (shadow isolation protocol): when the classifier for a\ngiven lifecycle phase is in shadow, Signal Engine MUST emit Unknown\nrather than fabricating True/False. The `ongoing` phase depends on the\npersistent_momentum classifier which is shadow today (live_status=False\non its tags), so events whose phase identification would require ongoing\nclassification surface as Unknown until promotion.\n\nPer \u00a72.4 rule #4 the consuming Rule Engine MUST fail-loud on Unknown \u2014\nno silent coercion to a default; the conservative path (= ongoing\ninactive) is taken explicitly.",
-      "enum": [
-        "Unknown",
-        "birth",
-        "re_entry",
-        "reversal",
-        "ongoing"
-      ],
-      "title": "LifecycleStage",
-      "type": "string"
-    },
     "QualityAttestation": {
       "enum": [
         "PASS",
         "FAIL"
       ],
       "title": "QualityAttestation",
-      "type": "string"
-    },
-    "SetupTag": {
-      "additionalProperties": false,
-      "description": "One element of an event's setup_composition.\n\n`live_status=False` marks shadow components (per \u00a72.4 Shadow Isolation\nprotocol). The downstream Decision Boundary in Rule Engine MUST filter\nthese out before sizing/structure decisions; only live tags participate\nin compositional upgrades. Shadow tags are still recorded for forensic\nreview.\n\n`live_status` is REQUIRED (no default) so producers explicitly mark\nevery tag's shadow status. Defaulting to True silently coerces shadow\ncomponents into live ones if a producer forgets to set it \u2014 that's\nthe \u00a72.4 isolation hole this requirement closes.",
-      "properties": {
-        "direction": {
-          "$ref": "#/$defs/Direction"
-        },
-        "live_status": {
-          "title": "Live Status",
-          "type": "boolean"
-        },
-        "name": {
-          "$ref": "#/$defs/SetupType"
-        }
-      },
-      "required": [
-        "name",
-        "direction",
-        "live_status"
-      ],
-      "title": "SetupTag",
-      "type": "object"
-    },
-    "SetupType": {
-      "description": "Lifecycle setup taxonomy (per docs/strategy_synthesis_design.md \u00a73.1).\n\nFour kinds split by trend lifecycle phase:\n  - breakout         : birth phase. Trigger = squeeze release (Donchian\n                       breakout TBD). Event-driven.\n  - pullback_resume  : re-entry phase. Trigger = 1H SuperTrend flip with\n                       higher-timeframe trend aligned with the new direction.\n                       Event-driven.\n  - reversal_start   : reversal phase. Trigger = 1H SuperTrend flip without\n                       HTF alignment. Event-driven, lowest base rate.\n  - persistent_momentum : ongoing phase. State-driven (cross-sectional RS\n                          rank within sector + discrete-info filter + EMA\n                          structural alignment). Forensic-only until promoted\n                          from shadow.",
-      "enum": [
-        "breakout",
-        "pullback_resume",
-        "reversal_start",
-        "persistent_momentum"
-      ],
-      "title": "SetupType",
       "type": "string"
     },
     "TrendState": {
@@ -107,10 +61,6 @@
       "title": "Efficiency Ratio",
       "type": "number"
     },
-    "event_id": {
-      "title": "Event Id",
-      "type": "string"
-    },
     "event_schema_version": {
       "default": "v1",
       "title": "Event Schema Version",
@@ -142,10 +92,6 @@
       "title": "Is Confirmed Bar",
       "type": "boolean"
     },
-    "lifecycle_stage": {
-      "$ref": "#/$defs/LifecycleStage",
-      "default": "Unknown"
-    },
     "price": {
       "title": "Price",
       "type": "number"
@@ -167,13 +113,6 @@
         "type": "string"
       },
       "title": "Quality Attestation Reasons",
-      "type": "array"
-    },
-    "setup_composition": {
-      "items": {
-        "$ref": "#/$defs/SetupTag"
-      },
-      "title": "Setup Composition",
       "type": "array"
     },
     "stop_level": {

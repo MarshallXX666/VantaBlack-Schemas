@@ -1,5 +1,47 @@
 # Changelog
 
+## v0.1.7 — 2026-05-01
+
+### Added
+
+- `contracts/state_transition_event.v1.schema.json`: re-synced from
+  VantaBlack-Engine after the lifecycle-setup-types feature merge plus a
+  follow-up 7-fix code-review batch (Engine commit `59d9dda`, deployed as
+  Cloud Run revision `signal-engine-00027-p26`). Two additive fields and
+  two new `$defs` enums:
+  - `setup_composition: list[SetupTag]` — lifecycle setup tags per
+    `strategy_synthesis_design.md` §3.1-3.2. Each tag carries `name`
+    (one of `breakout` / `pullback_resume` / `reversal_start` /
+    `persistent_momentum`), `direction`, and `live_status`. Tags with
+    `live_status=False` are SHADOW components per §2.4 — Decision
+    Boundary on the consumer side MUST filter them out before sizing.
+  - `lifecycle_stage: LifecycleStage` — trend lifecycle phase inferred
+    for the event. Defaults to `Unknown` per §2.4 rule #2: while the
+    `ongoing` classifier (persistent_momentum) is shadow, Signal Engine
+    cannot definitively assert non-`Unknown`. Consumers MUST fail-loud
+    on `Unknown` per §2.4 rule #4 — no silent coercion.
+- `data/contract_specimens/state_transition_event_v1_specimens.jsonl`:
+  re-synced. Specimen labels unchanged (still the original 6); payload
+  shape now carries the new fields where they were exercised.
+
+### Wire compatibility (v1 consumers)
+
+`setup_composition` and `lifecycle_stage` are EMITTED ONLY when their
+content is non-default — Signal Engine's `WebhookDispatcher` excludes
+them from the JSON payload when (a) `setup_composition` is empty or (b)
+`lifecycle_stage == Unknown`. Strict v1 parsers (`extra="forbid"`) on
+events with no setup classification continue to see the original v1
+shape and accept them. Consumers that want to react to the new fields
+should opt in by widening their parser.
+
+### Migration notes
+
+- No schema version bump (still `v1`) — these are additive fields with
+  defaults that round-trip cleanly through v1 parsers.
+- Consumer integration order: VantaBlack-Schemas v0.1.7 (this release) →
+  VantaBlack-Core Stage 2 wiring (post 24h soak PASS) → VantaBlack-PM
+  Stage 3 wiring (post cut-over).
+
 ## v0.1.6 — 2026-04-27
 
 ### Added

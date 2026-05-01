@@ -9,8 +9,12 @@
   follow-up 7-fix code-review batch + this PR's review-driven hardening
   (Engine commit, deployed as Cloud Run revision `signal-engine-00027-p26`).
 
-  Three new `$defs` (LifecycleStage, SetupType, SetupTag) plus two new
-  fields on `StateTransitionEvent`:
+  Three new `$defs` (LifecycleStage, SetupType, SetupTag) plus two
+  lifecycle fields newly present on `StateTransitionEvent`, plus
+  `event_id` (UUID4) which has been on Engine's pydantic model since
+  initial commit but was not present in the previously-synced Schemas
+  contract — see the `event_id` contract section below for the
+  load-bearing wire-compat consequences:
   - `setup_composition: list[SetupTag]` — lifecycle setup tags per
     `strategy_synthesis_design.md` §3.1-3.2. Each tag carries `name`
     (one of `breakout` / `pullback_resume` / `reversal_start` /

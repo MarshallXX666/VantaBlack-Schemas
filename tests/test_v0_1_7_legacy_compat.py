@@ -4,25 +4,28 @@ This test backs the CHANGELOG correction landed in PR #2: an earlier draft
 claimed v0.1.7 was byte-compatible with strict v1 consumers via
 omit-on-default for `setup_composition` / `lifecycle_stage`. That claim is
 wrong. The current v0.1.7 wire shape always carries `event_id`, which was
-NOT part of the v0.1.6 frozen schema (the schema synced on `main` before
-this PR). A strict consumer pinned to that schema (`additionalProperties:
-false`) therefore rejects every v0.1.7 payload, regardless of which
-v0.1.7-specific fields are at default.
+NOT part of the v0.1.6 frozen schema. A strict consumer pinned to that
+schema (`additionalProperties: false`) therefore rejects every v0.1.7
+payload, regardless of which v0.1.7-specific fields are at default.
 
 Practical implication: every consumer (Core / EXE / PM) MUST widen its
 parser to accept `event_id` (and ideally `setup_composition` /
 `lifecycle_stage` too) before it can ingest any v0.1.7 event.
 
-This test pins that contract. If a future change makes v0.1.7 events
-genuinely v1-strict-compatible (e.g. `event_id` becomes optional or its
-absence on the wire is allowed), this test will fail loud and force a
-deliberate CHANGELOG update — not a silent regression of the documented
-wire-compat story.
+The v0.1.6 schema is checked in as `tests/fixtures/state_transition_event_
+v0_1_6.schema.json` — a snapshot, not a `git show main:` reference. Using
+`main:` would self-destruct after this PR merges (main would point at the
+v0.1.7 schema). The fixture is the immutable legacy contract; it's the
+file consumers actually validated against before v0.1.7 shipped.
+
+If a future change makes v0.1.7 events genuinely v1-strict-compatible
+(e.g. `event_id` becomes optional or its absence on the wire is allowed),
+this test will fail loud and force a deliberate CHANGELOG update — not a
+silent regression of the documented wire-compat story.
 """
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -32,29 +35,24 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SPECIMENS_PATH = (
     REPO_ROOT / "data" / "contract_specimens" / "state_transition_event_v1_specimens.jsonl"
 )
-LEGACY_SCHEMA_REF = "main:contracts/state_transition_event.v1.schema.json"
+LEGACY_SCHEMA_FIXTURE = (
+    Path(__file__).resolve().parent
+    / "fixtures"
+    / "state_transition_event_v0_1_6.schema.json"
+)
 
 
-def _load_legacy_schema() -> dict | None:
-    """Load the v0.1.6 schema from git's `main` branch.
+def _load_legacy_schema() -> dict:
+    """Load the v0.1.6 schema from the checked-in fixture.
 
-    Skipped if git is unavailable or the ref is missing (e.g. shallow CI
-    checkout) — this test is forensic, not a release gate.
+    Snapshotted from `git show 43250bc:contracts/state_transition_event.v1.
+    schema.json` (the v0.1.6 release commit). Do NOT replace this with a
+    `main:` git ref — once this PR merges, `main` will hold the v0.1.7
+    schema and the test's "legacy lacks event_id" precondition would
+    silently flip.
     """
-    try:
-        out = subprocess.run(
-            ["git", "show", LEGACY_SCHEMA_REF],
-            cwd=REPO_ROOT,
-            capture_output=True,
-            check=True,
-            text=True,
-        )
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return None
-    try:
-        return json.loads(out.stdout)
-    except json.JSONDecodeError:
-        return None
+    with LEGACY_SCHEMA_FIXTURE.open() as f:
+        return json.load(f)
 
 
 def _load_specimens() -> list[dict]:
@@ -69,14 +67,7 @@ def _load_specimens() -> list[dict]:
 
 @pytest.fixture(scope="module")
 def legacy_schema() -> dict:
-    schema = _load_legacy_schema()
-    if schema is None:
-        pytest.skip(
-            f"Legacy schema unavailable at {LEGACY_SCHEMA_REF}; skipping forensic "
-            "wire-compat test (probably running outside a git checkout or against "
-            "a shallow clone)."
-        )
-    return schema
+    return _load_legacy_schema()
 
 
 @pytest.fixture(scope="module")

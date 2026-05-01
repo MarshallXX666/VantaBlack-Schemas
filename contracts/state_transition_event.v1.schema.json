@@ -30,13 +30,12 @@
     },
     "SetupTag": {
       "additionalProperties": false,
-      "description": "One element of an event's setup_composition.\n\n`live_status=False` marks shadow components (per \u00a72.4 Shadow Isolation\nprotocol). The downstream Decision Boundary in Rule Engine MUST filter\nthese out before sizing/structure decisions; only live tags participate\nin compositional upgrades. Shadow tags are still recorded for forensic\nreview.",
+      "description": "One element of an event's setup_composition.\n\n`live_status=False` marks shadow components (per \u00a72.4 Shadow Isolation\nprotocol). The downstream Decision Boundary in Rule Engine MUST filter\nthese out before sizing/structure decisions; only live tags participate\nin compositional upgrades. Shadow tags are still recorded for forensic\nreview.\n\n`live_status` is REQUIRED (no default) so producers explicitly mark\nevery tag's shadow status. Defaulting to True silently coerces shadow\ncomponents into live ones if a producer forgets to set it \u2014 that's\nthe \u00a72.4 isolation hole this requirement closes.",
       "properties": {
         "direction": {
           "$ref": "#/$defs/Direction"
         },
         "live_status": {
-          "default": true,
           "title": "Live Status",
           "type": "boolean"
         },
@@ -46,7 +45,8 @@
       },
       "required": [
         "name",
-        "direction"
+        "direction",
+        "live_status"
       ],
       "title": "SetupTag",
       "type": "object"

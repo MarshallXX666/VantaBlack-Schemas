@@ -13,7 +13,7 @@ Coverage goals:
 """
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 
 import pytest
 from pydantic import ValidationError
@@ -30,7 +30,6 @@ from vantablack_schemas import (
     StructureType,
     TimeInForce,
     Currency,
-    MultiplierSource,
 )
 
 
@@ -118,6 +117,19 @@ def test_v3_payload_deserializes_via_canonical_names():
     intent = IntentBlock.model_validate(_v3_style_payload())
     assert intent.intent_id == "01KPP7N3V3"
     assert intent.underlying == "AAPL"
+
+
+@pytest.mark.parametrize(
+    "structure_type",
+    [
+        StructureType.CALL_CREDIT_VERTICAL,
+        StructureType.PUT_CREDIT_VERTICAL,
+    ],
+)
+def test_credit_vertical_structure_types_deserialize(structure_type: StructureType):
+    payload = _v3_style_payload(structure_type=structure_type.value)
+    intent = IntentBlock.model_validate(payload)
+    assert intent.structure_type == structure_type
 
 
 def test_dump_emits_canonical_names_for_legacy_input():

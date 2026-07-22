@@ -134,6 +134,24 @@ def test_runtime_validator_enforces_date_time_format(specimens: list[dict]) -> N
 
 
 @pytest.mark.parametrize(
+    "contract_name",
+    [
+        "StrategyProposal",
+        "PortfolioAccountSnapshot",
+        "CapitalReservation",
+        "PortfolioDecision",
+    ],
+)
+def test_runtime_validator_rejects_envelope_before_payload_event(
+    specimens: list[dict], contract_name: str
+) -> None:
+    invalid = _specimen(specimens, contract_name)
+    invalid["produced_at"] = "2020-01-01T00:00:00Z"
+    with pytest.raises(StrategyEngineWireSemanticError, match="produced_at"):
+        validate_strategy_engine_wire_message(invalid)
+
+
+@pytest.mark.parametrize(
     ("field", "value", "match"),
     [
         ("expires_at", "2026-07-22T20:05:00Z", "expires_at"),
@@ -151,6 +169,16 @@ def test_runtime_validator_enforces_proposal_semantics(
         validate_strategy_engine_wire_message(invalid)
 
 
+def test_runtime_validator_rejects_cross_strategy_position_namespace(
+    specimens: list[dict],
+) -> None:
+    invalid = _specimen(specimens, "StrategyProposal")
+    invalid["payload"]["position_key"] = "OTHER_STRATEGY:v1:AAA"
+    _resign(invalid)
+    with pytest.raises(StrategyEngineWireSemanticError, match="proposal strategy owner"):
+        validate_strategy_engine_wire_message(invalid)
+
+
 def test_runtime_validator_rejects_data_cutoff_time_travel(specimens: list[dict]) -> None:
     invalid = _specimen(specimens, "StrategyProposal")
     invalid["payload"]["data_cutoff"]["observed_at"] = "2026-07-22T20:04:00Z"
@@ -164,6 +192,24 @@ def test_runtime_validator_rejects_duplicate_vendors(specimens: list[dict]) -> N
     invalid["payload"]["data_cutoff"]["vendors"] = ["POLYGON", "POLYGON"]
     _resign(invalid)
     with pytest.raises(StrategyEngineWireSemanticError, match="must be unique"):
+        validate_strategy_engine_wire_message(invalid)
+
+
+def test_runtime_validator_requires_canonical_vendor_spelling(
+    specimens: list[dict],
+) -> None:
+    invalid = _specimen(specimens, "StrategyProposal")
+    invalid["payload"]["data_cutoff"]["vendors"] = ["polygon"]
+    _resign(invalid)
+    with pytest.raises(StrategyEngineWireSemanticError, match="canonical uppercase"):
+        validate_strategy_engine_wire_message(invalid)
+
+
+def test_runtime_validator_rejects_underspecified_reduce(specimens: list[dict]) -> None:
+    invalid = _specimen(specimens, "StrategyProposal")
+    invalid["payload"].update({"action": "reduce", "requested_risk_s10k": 0, "target_weight": 0})
+    _resign(invalid)
+    with pytest.raises(StrategyEngineWireSemanticError, match="unsupported"):
         validate_strategy_engine_wire_message(invalid)
 
 
@@ -235,6 +281,15 @@ def test_runtime_validator_rejects_inconsistent_account_snapshot(
     _resign(invalid)
     with pytest.raises(StrategyEngineWireSemanticError, match=match):
         validate_strategy_engine_wire_message(invalid)
+
+
+def test_runtime_validator_applies_optional_account_exposure_default(
+    specimens: list[dict],
+) -> None:
+    message = _specimen(specimens, "PortfolioAccountSnapshot")
+    message["payload"].pop("per_strategy_exposure_s10k")
+    _resign(message)
+    validate_strategy_engine_wire_message(message)
 
 
 @pytest.mark.parametrize(

@@ -64,6 +64,17 @@ def validate_strategy_engine_wire_semantics(message: Mapping[str, Any]) -> None:
         _validate_reservation(payload)
     elif contract_name == "PortfolioDecision":
         _validate_decision(payload)
+    produced_at = _timestamp(message, "produced_at")
+    if contract_name == "StrategyProposal":
+        event_at = _timestamp(payload["data_cutoff"], "observed_at")
+    elif contract_name == "PortfolioAccountSnapshot":
+        event_at = _timestamp(payload, "as_of")
+    elif contract_name == "CapitalReservation":
+        event_at = _timestamp(payload, "created_at")
+    else:
+        event_at = _timestamp(payload, "decided_at")
+    if produced_at < event_at:
+        _semantic_error("wire produced_at cannot precede payload event time")
 
 
 def canonical_strategy_engine_payload_hash(payload: Mapping[str, Any]) -> str:
@@ -129,6 +140,9 @@ def _semantic_error(message: str) -> None:
 
 
 def _validate_proposal(payload: Mapping[str, Any]) -> None:
+    owner_prefix = f"{payload['strategy_id']}:{payload['strategy_version']}:"
+    if not payload["position_key"].startswith(owner_prefix):
+        _semantic_error("position_key must be namespaced to proposal strategy owner")
     signal_as_of = _timestamp(payload, "signal_as_of")
     valid_from = _timestamp(payload, "valid_from")
     expires_at = _timestamp(payload, "expires_at")
@@ -151,6 +165,8 @@ def _validate_proposal(payload: Mapping[str, Any]) -> None:
         _semantic_error("data cutoff vendors must be non-empty")
     if len(vendors) != len(set(vendors)):
         _semantic_error("data cutoff vendors must be unique")
+    if any(vendor != vendor.strip().upper() for vendor in vendors):
+        _semantic_error("data cutoff vendors must use canonical uppercase spelling")
     if not dataset_hashes or any(not name.strip() for name in dataset_hashes):
         _semantic_error("data cutoff requires named dataset hashes")
     if any(
@@ -165,13 +181,18 @@ def _validate_proposal(payload: Mapping[str, Any]) -> None:
     if mode != "live" and not dry_run:
         _semantic_error("non-live proposal must be dry_run")
     action = payload["action"]
+    if action == "reduce":
+        _semantic_error("reduce proposals are unsupported without an explicit reduction target")
     if action in {"open", "increase"}:
         if payload["requested_risk_s10k"] <= 0:
             _semantic_error("capital-consuming proposal requires positive requested risk")
         if payload.get("target_weight") in {None, 0}:
             _semantic_error("capital-consuming proposal requires non-zero target_weight")
-    if action == "close" and payload.get("target_weight") != 0:
-        _semantic_error("close proposal requires target_weight=0")
+    if action == "close":
+        if payload.get("target_weight") != 0:
+            _semantic_error("close proposal requires target_weight=0")
+        if payload["requested_risk_s10k"] != 0:
+            _semantic_error("close proposal cannot request capital")
 
 
 def _validate_reservation(payload: Mapping[str, Any]) -> None:
@@ -199,7 +220,7 @@ def _validate_account_snapshot(payload: Mapping[str, Any]) -> None:
     equity = payload["equity_s10k"]
     cash_buffer = payload["cash_buffer_s10k"]
     gross_exposure = payload["gross_exposure_s10k"]
-    strategy_exposure = sum(payload["per_strategy_exposure_s10k"].values())
+    strategy_exposure = sum(payload.get("per_strategy_exposure_s10k", {}).values())
     if cash_buffer > equity:
         _semantic_error("cash buffer cannot exceed equity")
     if gross_exposure > equity:

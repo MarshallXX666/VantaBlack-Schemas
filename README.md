@@ -15,6 +15,17 @@ This package MUST NOT import from Core, EXE, or PM. It's a leaf
 node in the dependency graph. Each consumer pins an explicit
 version or git SHA.
 
+The strategy-neutral successor runtime also publishes
+`contracts/strategy_engine_wire_message.v1.schema.json`. It defines four
+integrity-hashed wire messages: `StrategyProposal`,
+`PortfolioAccountSnapshot`, `CapitalReservation`, and `PortfolioDecision`.
+The accompanying specimen corpus is validated in CI. The v1 decision schema
+is shadow-only and structurally forbids `executable=true`.
+Python consumers should call `validate_strategy_engine_wire_message` to apply
+the packaged JSON Schema and then recompute the canonical payload hash and
+deterministic message ID. `verify_strategy_engine_wire_integrity` remains the
+narrow integrity-only helper.
+
 ## Contract discipline
 
 Two hard rules:

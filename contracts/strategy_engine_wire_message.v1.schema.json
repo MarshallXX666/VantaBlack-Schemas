@@ -1,0 +1,733 @@
+{
+  "$defs": {
+    "AssetClass": {
+      "enum": [
+        "equity",
+        "option",
+        "etf"
+      ],
+      "title": "AssetClass",
+      "type": "string"
+    },
+    "CapitalReservation": {
+      "additionalProperties": false,
+      "properties": {
+        "account_id": {
+          "title": "Account Id",
+          "type": "string"
+        },
+        "account_snapshot_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Account Snapshot Hash",
+          "type": "string"
+        },
+        "account_source_version": {
+          "minimum": 0,
+          "title": "Account Source Version",
+          "type": "integer"
+        },
+        "account_version_after": {
+          "minimum": 0,
+          "title": "Account Version After",
+          "type": "integer"
+        },
+        "account_version_before": {
+          "minimum": 0,
+          "title": "Account Version Before",
+          "type": "integer"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        },
+        "proposal_id": {
+          "title": "Proposal Id",
+          "type": "string"
+        },
+        "reason_codes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reason Codes",
+          "type": "array"
+        },
+        "requested_risk_s10k": {
+          "minimum": 0,
+          "title": "Requested Risk S10K",
+          "type": "integer"
+        },
+        "reservation_id": {
+          "title": "Reservation Id",
+          "type": "string"
+        },
+        "reserved_risk_s10k": {
+          "minimum": 0,
+          "title": "Reserved Risk S10K",
+          "type": "integer"
+        },
+        "status": {
+          "$ref": "#/$defs/ReservationStatus"
+        },
+        "strategy_id": {
+          "title": "Strategy Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "reservation_id",
+        "proposal_id",
+        "account_id",
+        "strategy_id",
+        "requested_risk_s10k",
+        "reserved_risk_s10k",
+        "status",
+        "created_at",
+        "expires_at",
+        "account_snapshot_hash",
+        "account_source_version",
+        "account_version_before",
+        "account_version_after",
+        "reason_codes"
+      ],
+      "title": "CapitalReservation",
+      "type": "object"
+    },
+    "CapitalReservationWireV1": {
+      "additionalProperties": false,
+      "properties": {
+        "contract_name": {
+          "const": "CapitalReservation",
+          "title": "Contract Name",
+          "type": "string"
+        },
+        "contract_version": {
+          "const": "1.0.0",
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "message_id": {
+          "pattern": "^wire_[a-z_]+_[0-9a-f]{24}$",
+          "title": "Message Id",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/CapitalReservation"
+        },
+        "payload_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Payload Hash",
+          "type": "string"
+        },
+        "produced_at": {
+          "format": "date-time",
+          "title": "Produced At",
+          "type": "string"
+        },
+        "producer": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Producer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contract_name",
+        "contract_version",
+        "message_id",
+        "produced_at",
+        "producer",
+        "payload_hash",
+        "payload"
+      ],
+      "title": "CapitalReservationWireV1",
+      "type": "object"
+    },
+    "DataCutoff": {
+      "additionalProperties": false,
+      "properties": {
+        "as_of": {
+          "format": "date-time",
+          "title": "As Of",
+          "type": "string"
+        },
+        "dataset_hashes": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Dataset Hashes",
+          "type": "object"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "vendors": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Vendors",
+          "type": "array"
+        }
+      },
+      "required": [
+        "as_of",
+        "observed_at",
+        "vendors",
+        "dataset_hashes"
+      ],
+      "title": "DataCutoff",
+      "type": "object"
+    },
+    "DecisionAction": {
+      "enum": [
+        "open",
+        "increase",
+        "reduce",
+        "close"
+      ],
+      "title": "DecisionAction",
+      "type": "string"
+    },
+    "DecisionOutcome": {
+      "enum": [
+        "approved",
+        "rejected",
+        "deferred"
+      ],
+      "title": "DecisionOutcome",
+      "type": "string"
+    },
+    "InstrumentRef": {
+      "additionalProperties": false,
+      "properties": {
+        "asset_class": {
+          "$ref": "#/$defs/AssetClass"
+        },
+        "symbol": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Symbol",
+          "type": "string"
+        }
+      },
+      "required": [
+        "asset_class",
+        "symbol"
+      ],
+      "title": "InstrumentRef",
+      "type": "object"
+    },
+    "PortfolioAccountSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "account_id": {
+          "title": "Account Id",
+          "type": "string"
+        },
+        "as_of": {
+          "format": "date-time",
+          "title": "As Of",
+          "type": "string"
+        },
+        "cash_buffer_s10k": {
+          "minimum": 0,
+          "title": "Cash Buffer S10K",
+          "type": "integer"
+        },
+        "equity_s10k": {
+          "exclusiveMinimum": 0,
+          "title": "Equity S10K",
+          "type": "integer"
+        },
+        "gross_exposure_s10k": {
+          "minimum": 0,
+          "title": "Gross Exposure S10K",
+          "type": "integer"
+        },
+        "per_strategy_exposure_s10k": {
+          "additionalProperties": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "title": "Per Strategy Exposure S10K",
+          "type": "object"
+        },
+        "source_version": {
+          "minimum": 0,
+          "title": "Source Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "account_id",
+        "as_of",
+        "source_version",
+        "equity_s10k",
+        "cash_buffer_s10k",
+        "gross_exposure_s10k"
+      ],
+      "title": "PortfolioAccountSnapshot",
+      "type": "object"
+    },
+    "PortfolioAccountSnapshotWireV1": {
+      "additionalProperties": false,
+      "properties": {
+        "contract_name": {
+          "const": "PortfolioAccountSnapshot",
+          "title": "Contract Name",
+          "type": "string"
+        },
+        "contract_version": {
+          "const": "1.0.0",
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "message_id": {
+          "pattern": "^wire_[a-z_]+_[0-9a-f]{24}$",
+          "title": "Message Id",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/PortfolioAccountSnapshot"
+        },
+        "payload_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Payload Hash",
+          "type": "string"
+        },
+        "produced_at": {
+          "format": "date-time",
+          "title": "Produced At",
+          "type": "string"
+        },
+        "producer": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Producer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contract_name",
+        "contract_version",
+        "message_id",
+        "produced_at",
+        "producer",
+        "payload_hash",
+        "payload"
+      ],
+      "title": "PortfolioAccountSnapshotWireV1",
+      "type": "object"
+    },
+    "PortfolioDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "account_id": {
+          "title": "Account Id",
+          "type": "string"
+        },
+        "account_snapshot_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Account Snapshot Hash",
+          "type": "string"
+        },
+        "approved_risk_s10k": {
+          "minimum": 0,
+          "title": "Approved Risk S10K",
+          "type": "integer"
+        },
+        "authority_mode": {
+          "const": "shadow",
+          "title": "Authority Mode",
+          "type": "string"
+        },
+        "decided_at": {
+          "format": "date-time",
+          "title": "Decided At",
+          "type": "string"
+        },
+        "decision_id": {
+          "title": "Decision Id",
+          "type": "string"
+        },
+        "executable": {
+          "const": false,
+          "default": false,
+          "title": "Executable",
+          "type": "boolean"
+        },
+        "outcome": {
+          "$ref": "#/$defs/DecisionOutcome"
+        },
+        "proposal_id": {
+          "title": "Proposal Id",
+          "type": "string"
+        },
+        "reason_codes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reason Codes",
+          "type": "array"
+        },
+        "reservation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reservation Id"
+        },
+        "strategy_id": {
+          "title": "Strategy Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "decision_id",
+        "proposal_id",
+        "account_id",
+        "strategy_id",
+        "outcome",
+        "approved_risk_s10k",
+        "account_snapshot_hash",
+        "decided_at",
+        "reason_codes",
+        "authority_mode"
+      ],
+      "title": "PortfolioDecision",
+      "type": "object"
+    },
+    "PortfolioDecisionWireV1": {
+      "additionalProperties": false,
+      "properties": {
+        "contract_name": {
+          "const": "PortfolioDecision",
+          "title": "Contract Name",
+          "type": "string"
+        },
+        "contract_version": {
+          "const": "1.0.0",
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "message_id": {
+          "pattern": "^wire_[a-z_]+_[0-9a-f]{24}$",
+          "title": "Message Id",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/PortfolioDecision"
+        },
+        "payload_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Payload Hash",
+          "type": "string"
+        },
+        "produced_at": {
+          "format": "date-time",
+          "title": "Produced At",
+          "type": "string"
+        },
+        "producer": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Producer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contract_name",
+        "contract_version",
+        "message_id",
+        "produced_at",
+        "producer",
+        "payload_hash",
+        "payload"
+      ],
+      "title": "PortfolioDecisionWireV1",
+      "type": "object"
+    },
+    "ReservationStatus": {
+      "enum": [
+        "active",
+        "rejected",
+        "released",
+        "expired"
+      ],
+      "title": "ReservationStatus",
+      "type": "string"
+    },
+    "StrategyMode": {
+      "enum": [
+        "research",
+        "shadow",
+        "paper",
+        "live"
+      ],
+      "title": "StrategyMode",
+      "type": "string"
+    },
+    "StrategyProposal": {
+      "additionalProperties": false,
+      "properties": {
+        "account_id": {
+          "title": "Account Id",
+          "type": "string"
+        },
+        "action": {
+          "$ref": "#/$defs/DecisionAction"
+        },
+        "data_cutoff": {
+          "$ref": "#/$defs/DataCutoff"
+        },
+        "dry_run": {
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "exit_policy_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exit Policy Id"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        },
+        "feature_snapshot_id": {
+          "title": "Feature Snapshot Id",
+          "type": "string"
+        },
+        "holding_period_sessions": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Holding Period Sessions"
+        },
+        "idempotency_key": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Idempotency Key",
+          "type": "string"
+        },
+        "instrument": {
+          "$ref": "#/$defs/InstrumentRef"
+        },
+        "mode": {
+          "$ref": "#/$defs/StrategyMode"
+        },
+        "position_key": {
+          "title": "Position Key",
+          "type": "string"
+        },
+        "proposal_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Proposal Id",
+          "type": "string"
+        },
+        "reason_codes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reason Codes",
+          "type": "array"
+        },
+        "requested_risk_s10k": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Requested Risk S10K",
+          "type": "integer"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Score"
+        },
+        "score_details": {
+          "additionalProperties": true,
+          "title": "Score Details",
+          "type": "object"
+        },
+        "score_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Score Name"
+        },
+        "signal_as_of": {
+          "format": "date-time",
+          "title": "Signal As Of",
+          "type": "string"
+        },
+        "strategy_id": {
+          "title": "Strategy Id",
+          "type": "string"
+        },
+        "strategy_version": {
+          "title": "Strategy Version",
+          "type": "string"
+        },
+        "target_weight": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": -1.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Weight"
+        },
+        "valid_from": {
+          "format": "date-time",
+          "title": "Valid From",
+          "type": "string"
+        }
+      },
+      "required": [
+        "proposal_id",
+        "idempotency_key",
+        "run_id",
+        "account_id",
+        "strategy_id",
+        "strategy_version",
+        "mode",
+        "action",
+        "instrument",
+        "position_key",
+        "signal_as_of",
+        "valid_from",
+        "expires_at",
+        "feature_snapshot_id",
+        "data_cutoff",
+        "reason_codes",
+        "dry_run"
+      ],
+      "title": "StrategyProposal",
+      "type": "object"
+    },
+    "StrategyProposalWireV1": {
+      "additionalProperties": false,
+      "properties": {
+        "contract_name": {
+          "const": "StrategyProposal",
+          "title": "Contract Name",
+          "type": "string"
+        },
+        "contract_version": {
+          "const": "1.0.0",
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "message_id": {
+          "pattern": "^wire_[a-z_]+_[0-9a-f]{24}$",
+          "title": "Message Id",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/StrategyProposal"
+        },
+        "payload_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Payload Hash",
+          "type": "string"
+        },
+        "produced_at": {
+          "format": "date-time",
+          "title": "Produced At",
+          "type": "string"
+        },
+        "producer": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Producer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contract_name",
+        "contract_version",
+        "message_id",
+        "produced_at",
+        "producer",
+        "payload_hash",
+        "payload"
+      ],
+      "title": "StrategyProposalWireV1",
+      "type": "object"
+    }
+  },
+  "$id": "https://schemas.vantablack.internal/strategy-engine/wire-message.v1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "discriminator": {
+    "mapping": {
+      "CapitalReservation": "#/$defs/CapitalReservationWireV1",
+      "PortfolioAccountSnapshot": "#/$defs/PortfolioAccountSnapshotWireV1",
+      "PortfolioDecision": "#/$defs/PortfolioDecisionWireV1",
+      "StrategyProposal": "#/$defs/StrategyProposalWireV1"
+    },
+    "propertyName": "contract_name"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/StrategyProposalWireV1"
+    },
+    {
+      "$ref": "#/$defs/PortfolioAccountSnapshotWireV1"
+    },
+    {
+      "$ref": "#/$defs/CapitalReservationWireV1"
+    },
+    {
+      "$ref": "#/$defs/PortfolioDecisionWireV1"
+    }
+  ],
+  "title": "VantaBlack Strategy Engine Wire Message v1"
+}

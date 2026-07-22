@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased — strategy-engine wire contract v1
+
+### Added
+
+- `contracts/strategy_engine_wire_message.v1.schema.json`: producer-matched
+  proposal, account snapshot, atomic reservation, and portfolio decision
+  envelopes for the strategy-neutral runtime.
+- `data/contract_specimens/strategy_engine_wire_message_v1_specimens.jsonl`:
+  one canonical specimen for each v1 message.
+- `verify_strategy_engine_wire_integrity`: consumer-side canonical payload-hash
+  and deterministic message-ID verification, because JSON Schema alone cannot
+  enforce cryptographic equality.
+- `validate_strategy_engine_wire_message`: packaged-schema validation followed
+  by integrity verification, for fail-closed runtime consumers.
+- Schema tests lock the producer fingerprint, reject drift and unknown fields,
+  require explicit contract identity/version, require nonnegative strategy
+  exposure, and structurally prevent shadow decisions from claiming execution
+  authority.
+
+This contract does not grant paper or live authority. EXE's read-only audit
+consumer, database contention evidence, paper canary, and production review
+remain separate gates.
+
 ## v0.1.7 — 2026-05-01
 
 ### Added

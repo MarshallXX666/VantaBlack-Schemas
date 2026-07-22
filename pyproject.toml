@@ -10,6 +10,7 @@ authors = [
 ]
 dependencies = [
     "pydantic>=2.5.0,<3",
+    "jsonschema>=4.0,<5",
 ]
 
 [project.optional-dependencies]
@@ -25,9 +26,13 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/vantablack_schemas"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"contracts/strategy_engine_wire_message.v1.schema.json" = "vantablack_schemas/contracts/strategy_engine_wire_message.v1.schema.json"
+
 [tool.hatch.build.targets.sdist]
 include = [
     "src/vantablack_schemas",
+    "contracts/strategy_engine_wire_message.v1.schema.json",
     "README.md",
     "CHANGELOG.md",
     "pyproject.toml",

@@ -203,6 +203,40 @@ def test_runtime_validator_enforces_reservation_semantics(
         validate_strategy_engine_wire_message(invalid)
 
 
+def test_runtime_validator_rejects_active_reservation_created_at_expiry(
+    specimens: list[dict],
+) -> None:
+    invalid = _specimen(specimens, "CapitalReservation")
+    invalid["payload"]["created_at"] = invalid["payload"]["expires_at"]
+    _resign(invalid)
+    with pytest.raises(StrategyEngineWireSemanticError, match="created before expiry"):
+        validate_strategy_engine_wire_message(invalid)
+
+
+@pytest.mark.parametrize(
+    ("updates", "match"),
+    [
+        ({"cash_buffer_s10k": 300_000_000_001}, "cash buffer"),
+        ({"gross_exposure_s10k": 300_000_000_001}, "gross exposure"),
+        (
+            {
+                "gross_exposure_s10k": 1,
+                "per_strategy_exposure_s10k": {"TEST_STRATEGY": 2},
+            },
+            "per-strategy exposure",
+        ),
+    ],
+)
+def test_runtime_validator_rejects_inconsistent_account_snapshot(
+    specimens: list[dict], updates: dict, match: str
+) -> None:
+    invalid = _specimen(specimens, "PortfolioAccountSnapshot")
+    invalid["payload"].update(updates)
+    _resign(invalid)
+    with pytest.raises(StrategyEngineWireSemanticError, match=match):
+        validate_strategy_engine_wire_message(invalid)
+
+
 @pytest.mark.parametrize(
     ("updates", "match"),
     [

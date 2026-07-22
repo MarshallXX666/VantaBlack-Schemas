@@ -58,6 +58,8 @@ def validate_strategy_engine_wire_semantics(message: Mapping[str, Any]) -> None:
     payload = message["payload"]
     if contract_name == "StrategyProposal":
         _validate_proposal(payload)
+    elif contract_name == "PortfolioAccountSnapshot":
+        _validate_account_snapshot(payload)
     elif contract_name == "CapitalReservation":
         _validate_reservation(payload)
     elif contract_name == "PortfolioDecision":
@@ -185,10 +187,25 @@ def _validate_reservation(payload: Mapping[str, Any]) -> None:
         if version_after != version_before:
             _semantic_error("rejected reservation cannot advance account version")
     else:
+        if _timestamp(payload, "created_at") >= _timestamp(payload, "expires_at"):
+            _semantic_error("capital reservation must be created before expiry")
         if reserved <= 0:
             _semantic_error("capital reservation must preserve positive reserved risk")
         if version_after != version_before + 1:
             _semantic_error("capital reservation must advance account version once")
+
+
+def _validate_account_snapshot(payload: Mapping[str, Any]) -> None:
+    equity = payload["equity_s10k"]
+    cash_buffer = payload["cash_buffer_s10k"]
+    gross_exposure = payload["gross_exposure_s10k"]
+    strategy_exposure = sum(payload["per_strategy_exposure_s10k"].values())
+    if cash_buffer > equity:
+        _semantic_error("cash buffer cannot exceed equity")
+    if gross_exposure > equity:
+        _semantic_error("gross exposure cannot exceed equity")
+    if strategy_exposure > gross_exposure:
+        _semantic_error("per-strategy exposure cannot exceed gross exposure")
 
 
 def _validate_decision(payload: Mapping[str, Any]) -> None:

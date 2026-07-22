@@ -159,6 +159,32 @@ def test_runtime_validator_rejects_data_cutoff_time_travel(specimens: list[dict]
         validate_strategy_engine_wire_message(invalid)
 
 
+def test_runtime_validator_rejects_duplicate_vendors(specimens: list[dict]) -> None:
+    invalid = _specimen(specimens, "StrategyProposal")
+    invalid["payload"]["data_cutoff"]["vendors"] = ["POLYGON", "POLYGON"]
+    _resign(invalid)
+    with pytest.raises(StrategyEngineWireSemanticError, match="must be unique"):
+        validate_strategy_engine_wire_message(invalid)
+
+
+def test_runtime_validator_requires_dataset_sha256(specimens: list[dict]) -> None:
+    invalid = _specimen(specimens, "StrategyProposal")
+    invalid["payload"]["data_cutoff"]["dataset_hashes"] = {"specimen": "not-a-hash"}
+    _resign(invalid)
+    with pytest.raises(StrategyEngineWireSemanticError, match="lowercase SHA-256"):
+        validate_strategy_engine_wire_message(invalid)
+
+
+@pytest.mark.parametrize(("value"), [float("nan"), float("inf"), float("-inf")])
+def test_runtime_validator_rejects_non_finite_json_numbers(
+    specimens: list[dict], value: float
+) -> None:
+    invalid = _specimen(specimens, "StrategyProposal")
+    invalid["payload"]["score_details"]["non_finite"] = value
+    with pytest.raises(StrategyEngineWireIntegrityError, match="strict canonical JSON"):
+        validate_strategy_engine_wire_message(invalid)
+
+
 @pytest.mark.parametrize(
     ("updates", "match"),
     [

@@ -65,7 +65,12 @@ def validate_strategy_engine_wire_semantics(message: Mapping[str, Any]) -> None:
 
 
 def canonical_strategy_engine_payload_hash(payload: Mapping[str, Any]) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    encoded = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
@@ -78,7 +83,12 @@ def verify_strategy_engine_wire_integrity(message: Mapping[str, Any]) -> None:
     payload = message.get("payload")
     if not isinstance(payload, Mapping):
         raise StrategyEngineWireIntegrityError("strategy-engine payload must be an object")
-    payload_hash = canonical_strategy_engine_payload_hash(payload)
+    try:
+        payload_hash = canonical_strategy_engine_payload_hash(payload)
+    except (TypeError, ValueError) as exc:
+        raise StrategyEngineWireIntegrityError(
+            "strategy-engine payload is not strict canonical JSON"
+        ) from exc
     if message.get("payload_hash") != payload_hash:
         raise StrategyEngineWireIntegrityError("strategy-engine payload_hash mismatch")
     expected_id = _wire_message_id(contract_name, payload_hash)
@@ -123,6 +133,8 @@ def _validate_proposal(payload: Mapping[str, Any]) -> None:
     cutoff = payload["data_cutoff"]
     cutoff_as_of = _timestamp(cutoff, "as_of")
     observed_at = _timestamp(cutoff, "observed_at")
+    vendors = cutoff["vendors"]
+    dataset_hashes = cutoff["dataset_hashes"]
     if expires_at <= valid_from:
         _semantic_error("proposal expires_at must be after valid_from")
     if signal_as_of > valid_from:
@@ -133,6 +145,17 @@ def _validate_proposal(payload: Mapping[str, Any]) -> None:
         _semantic_error("data cutoff observed_at cannot precede as_of")
     if observed_at > valid_from:
         _semantic_error("data cutoff cannot be observed after valid_from")
+    if not vendors or any(not vendor.strip() for vendor in vendors):
+        _semantic_error("data cutoff vendors must be non-empty")
+    if len(vendors) != len(set(vendors)):
+        _semantic_error("data cutoff vendors must be unique")
+    if not dataset_hashes or any(not name.strip() for name in dataset_hashes):
+        _semantic_error("data cutoff requires named dataset hashes")
+    if any(
+        len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest)
+        for digest in dataset_hashes.values()
+    ):
+        _semantic_error("dataset hashes must be lowercase SHA-256 digests")
     mode = payload["mode"]
     dry_run = payload["dry_run"]
     if mode == "live" and dry_run:

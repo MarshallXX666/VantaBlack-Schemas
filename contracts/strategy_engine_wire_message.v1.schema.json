@@ -16,6 +16,16 @@
           "title": "Account Id",
           "type": "string"
         },
+        "account_snapshot_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Account Snapshot Hash",
+          "type": "string"
+        },
+        "account_source_version": {
+          "minimum": 0,
+          "title": "Account Source Version",
+          "type": "integer"
+        },
         "account_version_after": {
           "minimum": 0,
           "title": "Account Version After",
@@ -79,6 +89,8 @@
         "status",
         "created_at",
         "expires_at",
+        "account_snapshot_hash",
+        "account_source_version",
         "account_version_before",
         "account_version_after",
         "reason_codes"
@@ -321,6 +333,11 @@
           "title": "Account Id",
           "type": "string"
         },
+        "account_snapshot_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Account Snapshot Hash",
+          "type": "string"
+        },
         "approved_risk_s10k": {
           "minimum": 0,
           "title": "Approved Risk S10K",
@@ -384,6 +401,7 @@
         "strategy_id",
         "outcome",
         "approved_risk_s10k",
+        "account_snapshot_hash",
         "decided_at",
         "reason_codes",
         "authority_mode"
